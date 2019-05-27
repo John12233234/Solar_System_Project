@@ -1,0 +1,281 @@
+<html>
+    <head>
+        <title>Three.js Crash Course</title>
+        <style>
+        body {margin: 0;}
+        canvas { width: 100%; height: 100%; };
+        </style>
+    </head>
+
+    <body>
+
+
+        <script src="js/three.js"></script>
+        <script src="js/OrbitControls.js"></script>
+
+        <script>
+            //some notes first we need to put all of the javascript into its own seperate file then call that in index
+            //index will act as our main
+            //then, we need to put everything in our javascript file into functions
+            //so far this is what I think needs to happen
+            //
+            //put all of the camera work into the init function.
+            //second, make a function that can load textures
+            //third, make a function that can load up planets
+            //fourth, make a function that can load up moons
+            //fifth, make a function that positions and makes the planets move in an orbit
+            //sixth do the same with the moons
+            //this to do list should be all finished by may 17th 
+            //bonus host all of this on a secure server.
+
+            //The constants that we're using
+            const astroUnit = 30; 
+            const earthRad = 1;
+            const moonRad = 0.2;
+
+            var scene = new THREE.Scene();
+            var camera = new THREE.PerspectiveCamera ( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+            var renderer = new THREE.WebGLRenderer( );
+            renderer.setSize( window.innerWidth, window.innerHeight );
+            document.body.appendChild( renderer.domElement );
+            window.addEventListener('resize',function()
+            {
+                var width = window.innerWidth;
+                var height = window.innerHeight;
+                renderer.setSize(width,height);
+                camera.aspect = width/height; //seems he created the method WITHIN the call
+                camera.updateProjectionMatrix( );
+
+            })
+
+
+
+            //this code will detect when the user resizes the window
+            //and then adjust the rendered shapes accordingly
+            controls = new THREE.OrbitControls(camera,renderer.domElement);
+            //this is how the user will pan around the camera
+            //so let's see if we can load up earth's img
+           
+           function textLoader(image)
+         	{
+         		texture = new THREE.TextureLoader().load(image);
+         		return texture;
+         	}
+
+
+         	//function to store all the relevant data regarding planets and how they orbit 
+
+         	function planetData(planetName,orbitalRadius,planetRadius,orbitRate){
+         		this.planetName = planetName;
+         		this.orbitalRadius = orbitalRadius;
+         		this.planetRadius= planetRadius;
+         		this.orbitRate = orbitRadius;
+
+         	}
+
+
+
+          //this function creates a generic sphere object and puts on the planet texture, making the final planet
+         	function createPlanet(image,radius,widSeg,heiSeg)
+         	{ //the basic function to create a planet 
+         		texture = textLoader(image);
+         		var geometry = new THREE.SphereGeometry(radius,widSeg,heiSeg);
+         		var material = new THREE.MeshPhongMaterial({map: texture});
+         		var planet = new THREE.Mesh(geometry,material);
+         		return planet;
+         	}
+
+
+             //this function is basically the same as the create planet function 
+            function createMoon(image,radius,widSeg,heiSeg){
+
+                texture = textLoader(image);
+                var geometry = new THREE.SphereGeometry(radius,widSeg,heiSeg);
+                var material = new THREE.MeshPhongMaterial({map: texture});
+                var moon = new THREE.Mesh(geometry,material);
+                return moon;
+            }
+
+         	//creating all the planets in the solar system in order from distance to the sun 
+         	//perhaps make an array and store all the data there?
+         	/****************************************************************************************
+         	/*date:May 18th,2019 I've made the following progress to the solar system project:
+         	1) i've made all eight planets
+         		- I distanced each planet according to the number of AU they are from the sun
+         		- I made their sizes according to their relative ratios to earth
+         		- I also added their textures
+         	2) I've made standard functions for loading textures, moving planets and making planet objects
+         	3) I've also got the sun and correct lighting
+
+         	What to add from here:
+         	1) I think there can be more function added in such as:
+         		- a getgeometry function
+         	2) I think I can organize the data for each planet into an object
+         	3) I also would like to clean up the current code, as there is a lot of redundancy
+
+
+
+
+
+         	 ******************************************************************************************/
+
+         	mercury = createPlanet('img/2k_mercury.jpg',0.45*earthRad,32,32);
+         	venus = createPlanet('img/2k_venus_atmosphere.jpg',0.95*earthRad,32,32);
+         	earth = createPlanet('img/earthmap.jpg',earthRad,32,32);
+         	mars = createPlanet('img/2k_mars.jpg',.48*earthRad,32,32);
+         	jupiter = createPlanet('img/2k_jupiter.jpg',2*earthRad,32,32);
+         	saturn = createPlanet('img/2k_saturn.jpg',1.7*earthRad,32,32);
+         	uranus = createPlanet('img/2k_uranus.jpg',1.4*earthRad,32,32);
+         	neptune = createPlanet('img/2k_neptune.jpg',1.4*earthRad,32,32);
+
+
+            //making the moons
+            earthMoon = createMoon('img/2k_moon.jpg',moonRad,32,32);
+
+
+
+         	//position the planets according to how many AUs they are away from the sun
+         	mercury.position.x = 0.39*astroUnit;
+         	venus.position.x = .723*astroUnit;
+         	earth.position.x = astroUnit; //1 AU is now 25. 
+         	mars.position.x = 1.524*astroUnit;
+         	jupiter.position.x = 5.203*astroUnit;
+         	saturn.position.x = 9.539*astroUnit;
+         	uranus.position.x = 19.18*astroUnit;
+         	neptune.position.x = 30.06*astroUnit;
+            earthMoon.position.x = earth.position.x + 0.2*astroUnit;
+
+
+         	//Add the final product to the scene
+         	scene.add(mercury);
+         	scene.add(venus);
+            scene.add(earth);
+            scene.add(mars);
+            scene.add(jupiter);
+            scene.add(saturn);
+            scene.add(uranus);
+            scene.add(neptune);
+            scene.add(earthMoon);
+
+         
+            camera.position.z = 10;
+            //make a function to create the orbits of the planets, it takes the their relative position to the sun and 
+            //moves it according to the formula for radial velocity.
+           function movePlanet(myPlanet, orbitRate, myTime,distanceFromAxis,orbitData) {
+
+           		myPlanet.rotation.y += 0.015;
+    		
+      			  myPlanet.position.x = Math.cos(myTime 
+                * (1.0 / (orbitRate * orbitData)) + 10.0) 
+                * distanceFromAxis;
+       			 myPlanet.position.z = Math.sin(myTime 
+                * (1.0 / (orbitRate * orbitData)) + 10.0) 
+                * distanceFromAxis;
+    
+            }
+
+            //this is similar to the movePlanet function except that i need to take into account that the moon is orbiting around the planet
+            function moveMoon(myMoon,myPlanet, orbitRate, myTime,distanceFromAxis,orbitData){
+                //first find a way to get the moon around the planet 
+                movePlanet(myMoon,orbitRate,myTime,distanceFromAxis,orbitData);
+                myMoon.position.x = myMoon.position.x + myPlanet.position.x;
+                myMoon.position.z = myMoon.position.z + myPlanet.position.z;
+
+
+
+
+
+            }
+
+            
+            //add another thing, when clicking on a planet or star to switch cameras and therefore controls
+            //to make the sun I made a sphere geometry then coupled the position of the light with the position of the sphere
+
+            //code to make the sun itself. 
+            //the goal is to make a very very bright star to look at, some things I anticipate i'll need are shaders
+            //glows and 
+            //make the sun out of mesh basic with point light then put an ambient light there too
+            var Sgeometry = new THREE.SphereGeometry(7,32,32);
+            var Smaterial = new THREE.MeshBasicMaterial({map: textLoader('img/2k_sun.jpg')});
+            var star = new THREE.Mesh(Sgeometry,Smaterial);
+
+            sun = star;
+            //it looks like we just need the ambient light there to cast shadows and the pointlight to be
+            //the thing that emanates 
+           /* var spriteMaterial = new THREE.SpriteMaterial(//wtf is sprite material?
+            {
+                map: new THREE.ImageUtils.loadTexture("img/glow.png")
+                , useScreenCoordinates: false
+                , color: 0xffffee
+                , transparent: false
+                , blending: THREE.AdditiveBlending
+            });
+    		var sprite = new THREE.Sprite(spriteMaterial);
+    		sprite.scale.set(70, 70, 1.0);
+    		sun.add(sprite); // This centers the glow at the sun.
+            scene.add(sun); //figure out how scene.add works, will I have to hardcode and call this every time?
+
+			*/
+
+
+
+
+
+
+             var starLight = new THREE.PointLight(0xffffffff,3,0,0); //basics are up i have a dimg white ball and a stationary earth. need a waay brighter ball, a non stationary earth
+             var sunLightemit = new THREE.AmbientLight(0xffffffff,2);
+             starLight.position.set(sun.position.x,sun.position.y,sun.position.z);
+             starLight.castShadow = true;
+
+
+		
+             scene.add(starLight);
+             scene.add(sun);
+
+            // game logic
+            var update = function( )
+            {
+            	var time = Date.now();
+            	movePlanet(mercury,88,time,0.39*astroUnit,200);
+            	movePlanet(venus,225,time,0.723*astroUnit,200);
+            	movePlanet(earth,365,time,astroUnit,200);
+            	movePlanet(mars,687,time,1.524*astroUnit,200);
+            	movePlanet(jupiter,4380,time,5.203*astroUnit,200);
+            	movePlanet(saturn,10585,time,9.539*astroUnit,200);
+            	movePlanet(uranus,30660,time,19.18*astroUnit,200);
+            	movePlanet(neptune,60225,time,30.06*astroUnit,200);
+
+
+                moveMoon(earthMoon,earth,30,time,2.8,200);
+
+            	//earth.position.x += 0.1;
+            	//earth.position.y += 0.1;
+            	
+
+            };
+
+
+            // draw Scene
+            var render = function( )
+            {
+              renderer.render( scene, camera );
+            };
+
+            // run game loop (update, render, repeat)
+            var GameLoop = function( ) //this is the equivalent of update 
+            {
+                requestAnimationFrame( GameLoop );
+
+                update( );
+                render( );
+            };
+
+
+            GameLoop( );
+
+
+        </script>
+
+    </body>
+</html>﻿
